@@ -13,13 +13,12 @@ export interface ModelInfo {
   tagline: string;
 }
 
-// Ordered from light/fast/cheap to heavy/smart/expensive — the range slider uses this order.
 export const MODEL_ORDER: ModelId[] = ["haiku-4.5", "sonnet-4.6", "opus-4.7", "opus-4.7-1m"];
 
 export const MODELS: Record<ModelId, ModelInfo> = {
   "haiku-4.5": {
     id: "haiku-4.5",
-    name: "claude-haiku-4-5-20251001",
+    name: "claude-haiku-4-5",
     label: "Haiku 4.5",
     tagline: "Fastest & cheapest",
     contextWindow: 200_000,
@@ -68,7 +67,6 @@ export const MODELS: Record<ModelId, ModelInfo> = {
 };
 
 export type UsageProfile = "light" | "standard" | "heavy";
-
 export const USAGE_ORDER: UsageProfile[] = ["light", "standard", "heavy"];
 
 export const USAGE_PROFILES: Record<
@@ -102,26 +100,56 @@ export const USAGE_PROFILES: Record<
 };
 
 export type PermissionMode = "plan" | "default" | "acceptEdits" | "bypassPermissions";
-
 export const PERMISSION_ORDER: PermissionMode[] = ["plan", "default", "acceptEdits", "bypassPermissions"];
-
 export const PERMISSION_INFO: Record<PermissionMode, { label: string; tagline: string }> = {
-  plan: { label: "Plan", tagline: "Safest — plans only, no edits" },
-  default: { label: "Default", tagline: "Asks before sensitive actions" },
-  acceptEdits: { label: "Accept edits", tagline: "Auto-accepts file edits" },
-  bypassPermissions: { label: "Bypass", tagline: "Dangerous — skips all prompts" },
+  plan: { label: "plan", tagline: "Safest — plans only, no edits" },
+  default: { label: "default", tagline: "Asks before sensitive actions" },
+  acceptEdits: { label: "acceptEdits", tagline: "Auto-accepts file edits" },
+  bypassPermissions: { label: "bypassPermissions", tagline: "Dangerous — skips all prompts" },
+};
+
+export type EffortLevel = "low" | "medium" | "high" | "xhigh";
+export const EFFORT_ORDER: EffortLevel[] = ["low", "medium", "high", "xhigh"];
+
+export type AxisLevel = 1 | 2 | 3 | 4 | 5;
+export const AXIS_LEVELS: AxisLevel[] = [1, 2, 3, 4, 5];
+export type AxisId = "security" | "tokens" | "accuracy";
+
+export const AXIS_LABELS: Record<AxisId, Record<AxisLevel, { label: string; tagline: string }>> = {
+  security: {
+    1: { label: "Open", tagline: "No guardrails — local sandboxes only" },
+    2: { label: "Loose", tagline: "Secrets denied, edits auto-accepted" },
+    3: { label: "Balanced", tagline: "Asks before Bash & writes" },
+    4: { label: "Strict", tagline: "Sandbox on, hooks validate, deny list" },
+    5: { label: "Locked down", tagline: "Plan-only, sandbox hard-required" },
+  },
+  tokens: {
+    1: { label: "Economy", tagline: "Minimum effort, no thinking" },
+    2: { label: "Frugal", tagline: "Low effort, cache on" },
+    3: { label: "Balanced", tagline: "Medium effort" },
+    4: { label: "Generous", tagline: "High effort + thinking" },
+    5: { label: "Max", tagline: "xhigh effort + 32K thinking" },
+  },
+  accuracy: {
+    1: { label: "Fast", tagline: "Haiku · instant answers" },
+    2: { label: "Quick", tagline: "Haiku or Sonnet · medium effort" },
+    3: { label: "Balanced", tagline: "Sonnet · daily driver" },
+    4: { label: "Careful", tagline: "Opus + thinking" },
+    5: { label: "Thorough", tagline: "Opus 1M + deep thinking" },
+  },
 };
 
 export interface ClaudeConfig {
   model: ModelId;
   usage: UsageProfile;
 
-  permissionMode: PermissionMode;
-  allowList: string[];
-  denyList: string[];
-  askList: string[];
-
-  dangerouslySkipPermissions: boolean;
+  permissions: {
+    defaultMode: PermissionMode;
+    allow: string[];
+    deny: string[];
+    ask: string[];
+  };
+  disableBypassPermissionsMode: boolean;
 
   hooks: {
     preToolUse: boolean;
@@ -130,10 +158,16 @@ export interface ClaudeConfig {
     stop: boolean;
   };
 
+  sandbox: {
+    enabled: boolean;
+    failIfUnavailable: boolean;
+  };
+
   mcpServers: string[];
 
-  extendedThinking: boolean;
+  alwaysThinkingEnabled: boolean;
   thinkingBudgetTokens: number;
+  effortLevel: EffortLevel;
 
   promptCaching: boolean;
 
@@ -141,21 +175,14 @@ export interface ClaudeConfig {
   env: Record<string, string>;
 }
 
-export interface Metrics {
-  security: {
-    score: number;
-    label: string;
-    reasons: string[];
-  };
-  tokens: {
+export interface Scores {
+  security: AxisLevel;
+  tokens: AxisLevel;
+  accuracy: AxisLevel;
+  cost: {
     tokensPerSession: number;
     tokensPerMonth: number;
     costPerMonthUSD: number;
     cacheSavingsPercent: number;
-  };
-  efficiency: {
-    score: number;
-    label: string;
-    reasons: string[];
   };
 }

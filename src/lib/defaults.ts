@@ -1,33 +1,44 @@
 import type { ClaudeConfig } from "./types";
+import { applyPreset } from "./presets";
 
-export const DEFAULT_CONFIG: ClaudeConfig = {
+const EMPTY_CONFIG: ClaudeConfig = {
   model: "sonnet-4.6",
   usage: "standard",
-
-  permissionMode: "default",
-  allowList: ["Read", "Grep", "Glob"],
-  denyList: ["Bash(rm -rf *)", "Bash(git push --force*)"],
-  askList: ["Write", "Edit", "Bash"],
-
-  dangerouslySkipPermissions: false,
-
+  permissions: {
+    defaultMode: "default",
+    allow: [],
+    deny: [],
+    ask: [],
+  },
+  disableBypassPermissionsMode: false,
   hooks: {
-    preToolUse: true,
+    preToolUse: false,
     postToolUse: false,
     userPromptSubmit: false,
     stop: false,
   },
-
+  sandbox: {
+    enabled: false,
+    failIfUnavailable: false,
+  },
   mcpServers: [],
-
-  extendedThinking: false,
+  alwaysThinkingEnabled: false,
   thinkingBudgetTokens: 0,
-
+  effortLevel: "medium",
   promptCaching: true,
-
   includeCoAuthoredBy: true,
   env: {},
 };
+
+/**
+ * Default starting point: level 3 on every axis — Balanced across the board.
+ * Presets are applied in order so each one fills in its own fields cleanly.
+ */
+export const DEFAULT_CONFIG: ClaudeConfig = applyPreset(
+  applyPreset(applyPreset(EMPTY_CONFIG, "security", 3), "tokens", 3),
+  "accuracy",
+  3,
+);
 
 export const AVAILABLE_MCP_SERVERS = [
   "filesystem",
