@@ -11,47 +11,47 @@ export function calculateSecurity(config: ClaudeConfig): Metrics["security"] {
 
   if (config.dangerouslySkipPermissions) {
     score -= 55;
-    reasons.push("--dangerously-skip-permissions está activo");
+    reasons.push("--dangerously-skip-permissions is enabled");
   }
 
   switch (config.permissionMode) {
+    case "plan":
+      score += 15;
+      reasons.push("Plan mode prevents accidental executions");
+      break;
     case "default":
       score += 10;
-      reasons.push("Modo default pregunta antes de acciones sensibles");
+      reasons.push("Default mode asks before sensitive actions");
       break;
     case "acceptEdits":
       score += 0;
-      reasons.push("acceptEdits acepta edits automáticamente");
-      break;
-    case "plan":
-      score += 15;
-      reasons.push("Plan mode evita ejecuciones accidentales");
+      reasons.push("acceptEdits auto-accepts file edits");
       break;
     case "bypassPermissions":
       score -= 40;
-      reasons.push("bypassPermissions ejecuta sin preguntar");
+      reasons.push("bypassPermissions runs without prompts");
       break;
   }
 
   if (config.allowList.includes("*") || config.allowList.includes("Bash")) {
     score -= 15;
-    reasons.push("Allowlist amplia (incluye Bash o *)");
+    reasons.push("Broad allowlist (includes Bash or *)");
   } else if (config.allowList.length > 0) {
     score += 8;
-    reasons.push(`Allowlist específica (${config.allowList.length} tools)`);
+    reasons.push(`Specific allowlist (${config.allowList.length} tools)`);
   }
 
   if (config.denyList.length > 0) {
     score += Math.min(12, config.denyList.length * 3);
-    reasons.push(`Denylist con ${config.denyList.length} patrones destructivos bloqueados`);
+    reasons.push(`Denylist blocks ${config.denyList.length} destructive patterns`);
   } else {
     score -= 8;
-    reasons.push("Sin denylist para comandos destructivos");
+    reasons.push("No denylist for destructive commands");
   }
 
   if (config.hooks.preToolUse) {
     score += 10;
-    reasons.push("Hook PreToolUse valida tool calls");
+    reasons.push("PreToolUse hook validates tool calls");
   }
   if (config.hooks.userPromptSubmit) {
     score += 4;
@@ -59,13 +59,13 @@ export function calculateSecurity(config: ClaudeConfig): Metrics["security"] {
 
   if (config.mcpServers.length > 3) {
     score -= (config.mcpServers.length - 3) * 3;
-    reasons.push(`${config.mcpServers.length} MCP servers aumentan superficie de ataque`);
+    reasons.push(`${config.mcpServers.length} MCP servers expand attack surface`);
   }
 
   const final = Math.round(clamp(score));
   return {
     score: final,
-    label: final >= 80 ? "Seguro" : final >= 55 ? "Moderado" : final >= 30 ? "Riesgoso" : "Peligroso",
+    label: final >= 80 ? "Secure" : final >= 55 ? "Moderate" : final >= 30 ? "Risky" : "Dangerous",
     reasons,
   };
 }
@@ -131,56 +131,56 @@ export function calculateEfficiency(config: ClaudeConfig): Metrics["efficiency"]
   const reasons: string[] = [];
 
   let score = model.speedScore * 0.4 + model.qualityScore * 0.4;
-  reasons.push(`${model.label}: velocidad ${model.speedScore}, calidad ${model.qualityScore}`);
+  reasons.push(`${model.label}: speed ${model.speedScore}, quality ${model.qualityScore}`);
 
   const priceIndex = model.inputPricePer1M + model.outputPricePer1M / 5;
   const costScore = clamp(100 - priceIndex * 2);
   score += costScore * 0.2;
-  reasons.push(`Costo relativo: ${priceIndex.toFixed(1)}$/M ponderado`);
+  reasons.push(`Relative cost: ${priceIndex.toFixed(1)}$/M weighted`);
 
   if (config.promptCaching) {
     score += 6;
-    reasons.push("Prompt caching reduce latencia e input tokens");
+    reasons.push("Prompt caching reduces latency and input tokens");
   } else {
     score -= 4;
-    reasons.push("Prompt caching desactivado: paga input completo siempre");
+    reasons.push("Prompt caching off: full input cost every turn");
   }
 
   if (config.extendedThinking) {
     const budgetK = config.thinkingBudgetTokens / 1000;
     if (budgetK > 0 && budgetK <= 8) {
       score += 2;
-      reasons.push(`Thinking budget ${budgetK}K: buen balance`);
+      reasons.push(`Thinking budget ${budgetK}K: good balance`);
     } else if (budgetK > 8) {
       score -= Math.min(10, budgetK - 8);
-      reasons.push(`Thinking budget ${budgetK}K: agrega mucha latencia`);
+      reasons.push(`Thinking budget ${budgetK}K: adds a lot of latency`);
     }
   }
 
   const hookCount = Object.values(config.hooks).filter(Boolean).length;
   if (hookCount > 2) {
     score -= (hookCount - 2) * 3;
-    reasons.push(`${hookCount} hooks activos: agregan overhead por turno`);
+    reasons.push(`${hookCount} active hooks: per-turn overhead`);
   }
 
   if (config.mcpServers.length > 4) {
     score -= (config.mcpServers.length - 4) * 2;
-    reasons.push(`${config.mcpServers.length} MCP servers: overhead de context`);
+    reasons.push(`${config.mcpServers.length} MCP servers: context overhead`);
   }
 
   if (config.model === "opus-4.7-1m" && config.usage === "light") {
     score -= 10;
-    reasons.push("Opus 1M es overkill para uso ligero");
+    reasons.push("Opus 1M is overkill for light usage");
   }
   if (config.model === "haiku-4.5" && config.usage === "heavy") {
     score -= 8;
-    reasons.push("Haiku puede quedarse corto en refactors complejos");
+    reasons.push("Haiku may fall short on complex refactors");
   }
 
   const final = Math.round(clamp(score));
   return {
     score: final,
-    label: final >= 80 ? "Óptima" : final >= 60 ? "Buena" : final >= 40 ? "Regular" : "Pobre",
+    label: final >= 80 ? "Optimal" : final >= 60 ? "Good" : final >= 40 ? "Fair" : "Poor",
     reasons,
   };
 }

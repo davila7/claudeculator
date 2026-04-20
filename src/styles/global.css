@@ -70,3 +70,42 @@ body {
 .fadein {
   animation: fadein 0.3s ease-out;
 }
+
+/* Range slider — Vercel-style minimal */
+.claude-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-border-strong);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.claude-range:focus-visible {
+  outline: 2px solid var(--color-fg);
+  outline-offset: 4px;
+}
+.claude-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-fg);
+  border: 3px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-fg);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.claude-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+.claude-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-fg);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-fg);
+  cursor: pointer;
+}

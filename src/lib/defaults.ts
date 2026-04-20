@@ -38,3 +38,6 @@ export const AVAILABLE_MCP_SERVERS = [
   "neon",
   "vercel",
 ];
+
+export const AITMPL_HOOKS_URL = "https://www.aitmpl.com/hooks";
+export const AITMPL_MCPS_URL = "https://www.aitmpl.com/mcps";

@@ -1,7 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ClaudeConfig, ModelId, PermissionMode, UsageProfile } from "@/lib/types";
-import { MODELS, USAGE_PROFILES } from "@/lib/types";
-import { DEFAULT_CONFIG, AVAILABLE_MCP_SERVERS } from "@/lib/defaults";
+import {
+  MODELS,
+  MODEL_ORDER,
+  PERMISSION_INFO,
+  PERMISSION_ORDER,
+  USAGE_PROFILES,
+  USAGE_ORDER,
+} from "@/lib/types";
+import { AITMPL_HOOKS_URL, AITMPL_MCPS_URL, AVAILABLE_MCP_SERVERS, DEFAULT_CONFIG } from "@/lib/defaults";
 import { buildSettingsJson, calculateAll } from "@/lib/calculator";
 
 function formatNumber(n: number): string {
@@ -9,68 +16,93 @@ function formatNumber(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return n.toString();
 }
-
 function formatUSD(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-interface GaugeProps {
-  label: string;
-  value: number;
-  sublabel: string;
-  tone: "success" | "warning" | "danger";
-}
-
-function Gauge({ label, value, sublabel, tone }: GaugeProps) {
-  const toneColor =
-    tone === "success" ? "var(--color-success)" : tone === "warning" ? "var(--color-warning)" : "var(--color-danger)";
-  const circumference = 2 * Math.PI * 28;
-  const offset = circumference - (value / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4">
-      <div className="relative h-20 w-20">
-        <svg className="h-20 w-20 -rotate-90" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="28" strokeWidth="5" stroke="var(--color-border-strong)" fill="none" />
-          <circle
-            cx="32"
-            cy="32"
-            r="28"
-            strokeWidth="5"
-            stroke={toneColor}
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 0.4s ease" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center font-mono text-xl font-medium">{value}</div>
-      </div>
-      <div className="text-center">
-        <div className="text-xs uppercase tracking-wider text-[var(--color-fg-muted)]">{label}</div>
-        <div className="text-sm font-medium" style={{ color: toneColor }}>
-          {sublabel}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface SectionProps {
+interface StepRangeProps {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  value: number;
+  min?: number;
+  max: number;
+  onChange: (v: number) => void;
+  currentLabel: string;
+  currentTagline?: string;
+  tickLabels?: string[];
 }
 
-function Section({ title, description, children }: SectionProps) {
+function StepRange({
+  title,
+  description,
+  value,
+  min = 0,
+  max,
+  onChange,
+  currentLabel,
+  currentTagline,
+  tickLabels,
+}: StepRangeProps) {
+  const dec = () => onChange(Math.max(min, value - 1));
+  const inc = () => onChange(Math.min(max, value + 1));
+
   return (
     <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold tracking-tight text-[var(--color-fg)]">{title}</h2>
-        {description ? <p className="mt-1 text-xs text-[var(--color-fg-muted)]">{description}</p> : null}
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+          {description ? <p className="mt-1 text-xs text-[var(--color-fg-muted)]">{description}</p> : null}
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-xs uppercase tracking-wider text-[var(--color-fg-muted)]">
+            {value + 1}/{max - min + 1}
+          </div>
+          <div className="text-sm font-medium">{currentLabel}</div>
+          {currentTagline ? (
+            <div className="text-xs text-[var(--color-fg-muted)]">{currentTagline}</div>
+          ) : null}
+        </div>
       </div>
-      {children}
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={dec}
+          aria-label="decrease"
+          disabled={value <= min}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong)] text-lg transition hover:bg-[var(--color-bg-hover)] disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          −
+        </button>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={1}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="claude-range flex-1"
+        />
+        <button
+          type="button"
+          onClick={inc}
+          aria-label="increase"
+          disabled={value >= max}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong)] text-lg transition hover:bg-[var(--color-bg-hover)] disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          +
+        </button>
+      </div>
+
+      {tickLabels ? (
+        <div className="mt-2 flex justify-between px-11 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-subtle)]">
+          {tickLabels.map((label, i) => (
+            <span key={i} className={i === value ? "text-[var(--color-fg)]" : ""}>
+              {label}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -81,7 +113,6 @@ interface ToggleProps {
   checked: boolean;
   onChange: (v: boolean) => void;
 }
-
 function Toggle({ label, description, checked, onChange }: ToggleProps) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-3 py-2">
@@ -112,11 +143,35 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   );
 }
 
+interface MetricCardProps {
+  label: string;
+  value: string;
+  sub: string;
+  tone: "success" | "warning" | "danger";
+}
+function MetricCard({ label, value, sub, tone }: MetricCardProps) {
+  const color =
+    tone === "success"
+      ? "var(--color-success)"
+      : tone === "warning"
+        ? "var(--color-warning)"
+        : "var(--color-danger)";
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4">
+      <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg-muted)]">{label}</div>
+      <div className="mt-1 font-mono text-2xl font-medium" style={{ color }}>
+        {value}
+      </div>
+      <div className="mt-0.5 text-xs text-[var(--color-fg-muted)]">{sub}</div>
+    </div>
+  );
+}
+
 export default function Calculator() {
   const [config, setConfig] = useState<ClaudeConfig>(DEFAULT_CONFIG);
+  const [generated, setGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [newAllow, setNewAllow] = useState("");
-  const [newDeny, setNewDeny] = useState("");
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const metrics = useMemo(() => calculateAll(config), [config]);
   const settingsJson = useMemo(() => buildSettingsJson(config), [config]);
@@ -124,6 +179,22 @@ export default function Calculator() {
 
   const update = <K extends keyof ClaudeConfig>(key: K, value: ClaudeConfig[K]) => {
     setConfig((c) => ({ ...c, [key]: value }));
+  };
+
+  const modelIdx = MODEL_ORDER.indexOf(config.model);
+  const usageIdx = USAGE_ORDER.indexOf(config.usage);
+  const permIdx = PERMISSION_ORDER.indexOf(config.permissionMode);
+
+  const activeHookCount = Object.values(config.hooks).filter(Boolean).length;
+  const mcpCount = config.mcpServers.length;
+
+  const currentModel = MODELS[config.model];
+
+  const handleGenerate = () => {
+    setGenerated(true);
+    requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const handleCopy = async () => {
@@ -146,354 +217,346 @@ export default function Calculator() {
     URL.revokeObjectURL(url);
   };
 
-  const securityTone = metrics.security.score >= 70 ? "success" : metrics.security.score >= 45 ? "warning" : "danger";
-  const efficiencyTone =
-    metrics.efficiency.score >= 70 ? "success" : metrics.efficiency.score >= 50 ? "warning" : "danger";
+  const handleReset = () => {
+    setConfig(DEFAULT_CONFIG);
+    setGenerated(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
+  const setHookByCount = (n: number) => {
+    // Turn hooks on in a priority order as the slider grows
+    const order: Array<keyof ClaudeConfig["hooks"]> = ["preToolUse", "userPromptSubmit", "postToolUse", "stop"];
+    const next: ClaudeConfig["hooks"] = {
+      preToolUse: false,
+      postToolUse: false,
+      userPromptSubmit: false,
+      stop: false,
+    };
+    for (let i = 0; i < n; i++) next[order[i]] = true;
+    update("hooks", next);
+  };
+
+  const setMcpByCount = (n: number) => {
+    update("mcpServers", AVAILABLE_MCP_SERVERS.slice(0, n));
+  };
+
+  const securityTone: MetricCardProps["tone"] =
+    metrics.security.score >= 70 ? "success" : metrics.security.score >= 45 ? "warning" : "danger";
+  const efficiencyTone: MetricCardProps["tone"] =
+    metrics.efficiency.score >= 70 ? "success" : metrics.efficiency.score >= 50 ? "warning" : "danger";
   const tokenLoad = Math.min(100, Math.round((metrics.tokens.tokensPerMonth / 50_000_000) * 100));
-  const tokensTone = tokenLoad < 40 ? "success" : tokenLoad < 75 ? "warning" : "danger";
+  const tokensTone: MetricCardProps["tone"] = tokenLoad < 40 ? "success" : tokenLoad < 75 ? "warning" : "danger";
 
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-[1fr_420px] lg:px-8">
-      {/* LEFT — form */}
-      <div className="flex flex-col gap-4">
-        <Section title="Modelo" description="La elección del modelo domina costo y latencia.">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {(Object.keys(MODELS) as ModelId[]).map((id) => {
-              const m = MODELS[id];
-              const active = config.model === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => update("model", id)}
-                  className="rounded-md border p-3 text-left transition hover:bg-[var(--color-bg-hover)]"
-                  style={{
-                    borderColor: active ? "var(--color-fg)" : "var(--color-border)",
-                    background: active ? "var(--color-bg-hover)" : "transparent",
-                  }}
-                >
-                  <div className="text-sm font-medium">{m.label}</div>
-                  <div className="mt-1 font-mono text-xs text-[var(--color-fg-muted)]">
-                    {formatNumber(m.contextWindow)} · ${m.inputPricePer1M}/M in · ${m.outputPricePer1M}/M out
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </Section>
+    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-8 lg:px-6">
+      <StepRange
+        title="1. Model"
+        description="From fastest & cheapest to the smartest."
+        value={modelIdx}
+        max={MODEL_ORDER.length - 1}
+        onChange={(i) => update("model", MODEL_ORDER[i] as ModelId)}
+        currentLabel={currentModel.label}
+        currentTagline={`${currentModel.tagline} · $${currentModel.inputPricePer1M}/M in · $${currentModel.outputPricePer1M}/M out`}
+        tickLabels={MODEL_ORDER.map((id) => MODELS[id].label.split(" ")[0])}
+      />
 
-        <Section title="Perfil de uso" description="¿Cuánto vas a usar Claude cada día?">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {(Object.keys(USAGE_PROFILES) as UsageProfile[]).map((k) => {
-              const p = USAGE_PROFILES[k];
-              const active = config.usage === k;
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => update("usage", k)}
-                  className="rounded-md border p-3 text-left transition hover:bg-[var(--color-bg-hover)]"
-                  style={{
-                    borderColor: active ? "var(--color-fg)" : "var(--color-border)",
-                    background: active ? "var(--color-bg-hover)" : "transparent",
-                  }}
-                >
-                  <div className="text-sm font-medium capitalize">{k}</div>
-                  <div className="mt-1 text-xs text-[var(--color-fg-muted)]">{p.label}</div>
-                </button>
-              );
-            })}
-          </div>
-        </Section>
+      <StepRange
+        title="2. Usage intensity"
+        description="How much you lean on Claude each day."
+        value={usageIdx}
+        max={USAGE_ORDER.length - 1}
+        onChange={(i) => update("usage", USAGE_ORDER[i] as UsageProfile)}
+        currentLabel={USAGE_PROFILES[config.usage].label}
+        currentTagline={USAGE_PROFILES[config.usage].tagline}
+        tickLabels={USAGE_ORDER.map((k) => USAGE_PROFILES[k].label)}
+      />
 
-        <Section title="Permisos" description="Controla cómo Claude ejecuta tools.">
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-1 rounded-md border border-[var(--color-border)] p-1">
-              {(["default", "acceptEdits", "plan", "bypassPermissions"] as PermissionMode[]).map((mode) => {
-                const active = config.permissionMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => update("permissionMode", mode)}
-                    className="rounded px-3 py-1.5 text-xs transition"
-                    style={{
-                      background: active ? "var(--color-fg)" : "transparent",
-                      color: active ? "var(--color-bg)" : "var(--color-fg-muted)",
-                    }}
-                  >
-                    {mode}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <StepRange
+        title="3. Permission mode"
+        description="Safer on the left, looser on the right."
+        value={permIdx}
+        max={PERMISSION_ORDER.length - 1}
+        onChange={(i) => update("permissionMode", PERMISSION_ORDER[i] as PermissionMode)}
+        currentLabel={PERMISSION_INFO[config.permissionMode].label}
+        currentTagline={PERMISSION_INFO[config.permissionMode].tagline}
+        tickLabels={PERMISSION_ORDER.map((m) => PERMISSION_INFO[m].label)}
+      />
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <ChipList
-              label="Allow"
-              tone="success"
-              items={config.allowList}
-              onRemove={(v) => update("allowList", config.allowList.filter((x) => x !== v))}
-              input={newAllow}
-              setInput={setNewAllow}
-              onAdd={() => {
-                if (!newAllow.trim()) return;
-                update("allowList", [...config.allowList, newAllow.trim()]);
-                setNewAllow("");
-              }}
-              placeholder="ej. Read, Grep"
-            />
-            <ChipList
-              label="Deny"
-              tone="danger"
-              items={config.denyList}
-              onRemove={(v) => update("denyList", config.denyList.filter((x) => x !== v))}
-              input={newDeny}
-              setInput={setNewDeny}
-              onAdd={() => {
-                if (!newDeny.trim()) return;
-                update("denyList", [...config.denyList, newDeny.trim()]);
-                setNewDeny("");
-              }}
-              placeholder="ej. Bash(rm -rf *)"
-            />
+      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">4. Hooks</h2>
+            <p className="mt-1 text-xs text-[var(--color-fg-muted)]">
+              Scripts that run on tool calls and prompts.
+            </p>
           </div>
-
-          <div className="mt-3 border-t border-[var(--color-border)] pt-2">
-            <Toggle
-              label="--dangerously-skip-permissions"
-              description="Salta todos los permisos. Útil para sandboxes. Penaliza seguridad."
-              checked={config.dangerouslySkipPermissions}
-              onChange={(v) => update("dangerouslySkipPermissions", v)}
-            />
-          </div>
-        </Section>
-
-        <Section title="Hooks" description="Scripts que corren antes/después de ciertos eventos.">
+          <a
+            href={AITMPL_HOOKS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 rounded-md border border-[var(--color-border-strong)] px-2.5 py-1 text-xs transition hover:bg-[var(--color-bg-hover)]"
+          >
+            View more ↗
+          </a>
+        </div>
+        <StepRangeBare
+          value={activeHookCount}
+          max={4}
+          onChange={setHookByCount}
+          unit="hook"
+          summary={activeHookCount === 0 ? "No hooks — lighter but unchecked" : `${activeHookCount} active hook${activeHookCount > 1 ? "s" : ""}`}
+        />
+        <div className="mt-3 border-t border-[var(--color-border)] pt-1">
           <Toggle
             label="PreToolUse"
-            description="Valida tool calls antes de ejecutarlos."
+            description="Validate tool calls before running."
             checked={config.hooks.preToolUse}
             onChange={(v) => update("hooks", { ...config.hooks, preToolUse: v })}
           />
           <Toggle
-            label="PostToolUse"
-            description="Ejecuta después de cada tool call."
-            checked={config.hooks.postToolUse}
-            onChange={(v) => update("hooks", { ...config.hooks, postToolUse: v })}
-          />
-          <Toggle
             label="UserPromptSubmit"
-            description="Se activa al enviar un prompt."
+            description="Fires on every prompt submit."
             checked={config.hooks.userPromptSubmit}
             onChange={(v) => update("hooks", { ...config.hooks, userPromptSubmit: v })}
           />
           <Toggle
+            label="PostToolUse"
+            description="Runs after each tool call."
+            checked={config.hooks.postToolUse}
+            onChange={(v) => update("hooks", { ...config.hooks, postToolUse: v })}
+          />
+          <Toggle
             label="Stop"
-            description="Al terminar la respuesta."
+            description="Runs when the response ends."
             checked={config.hooks.stop}
             onChange={(v) => update("hooks", { ...config.hooks, stop: v })}
           />
-        </Section>
+        </div>
+      </section>
 
-        <Section title="MCP servers" description="Más servers = más capacidades, pero más tokens y superficie de ataque.">
-          <div className="flex flex-wrap gap-2">
-            {AVAILABLE_MCP_SERVERS.map((name) => {
-              const active = config.mcpServers.includes(name);
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => {
-                    update(
-                      "mcpServers",
-                      active ? config.mcpServers.filter((n) => n !== name) : [...config.mcpServers, name],
-                    );
-                  }}
-                  className="rounded-full border px-3 py-1 text-xs transition"
-                  style={{
-                    borderColor: active ? "var(--color-fg)" : "var(--color-border-strong)",
-                    background: active ? "var(--color-fg)" : "transparent",
-                    color: active ? "var(--color-bg)" : "var(--color-fg-muted)",
-                  }}
-                >
-                  {name}
-                </button>
-              );
-            })}
+      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">5. MCP servers</h2>
+            <p className="mt-1 text-xs text-[var(--color-fg-muted)]">
+              More servers, more capabilities — but more tokens and attack surface.
+            </p>
           </div>
-        </Section>
+          <a
+            href={AITMPL_MCPS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 rounded-md border border-[var(--color-border-strong)] px-2.5 py-1 text-xs transition hover:bg-[var(--color-bg-hover)]"
+          >
+            View more ↗
+          </a>
+        </div>
+        <StepRangeBare
+          value={mcpCount}
+          max={AVAILABLE_MCP_SERVERS.length}
+          onChange={setMcpByCount}
+          unit="server"
+          summary={mcpCount === 0 ? "No MCP servers" : `${mcpCount} server${mcpCount > 1 ? "s" : ""} connected`}
+        />
+        {mcpCount > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {config.mcpServers.map((name) => (
+              <span
+                key={name}
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border-strong)] bg-[var(--color-bg-hover)] px-2 py-0.5 font-mono text-xs"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
-        <Section title="Thinking & caching" description="Balance fino entre calidad y costo.">
-          <Toggle
-            label="Extended thinking"
-            description="Claude piensa antes de responder. Más calidad, más tokens, más latencia."
-            checked={config.extendedThinking}
-            onChange={(v) => update("extendedThinking", v)}
-          />
-          {config.extendedThinking ? (
-            <div className="mt-2">
-              <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="text-[var(--color-fg-muted)]">Budget de thinking</span>
-                <span className="font-mono">{formatNumber(config.thinkingBudgetTokens)} tokens</span>
-              </div>
-              <input
-                type="range"
-                min={1000}
-                max={32000}
-                step={1000}
-                value={config.thinkingBudgetTokens || 4000}
-                onChange={(e) => update("thinkingBudgetTokens", Number(e.target.value))}
-                className="w-full accent-white"
-              />
+      <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
+        <div className="mb-2">
+          <h2 className="text-sm font-semibold tracking-tight">6. Thinking & caching</h2>
+        </div>
+        <Toggle
+          label="Extended thinking"
+          description="Claude thinks before answering. Higher quality, more tokens."
+          checked={config.extendedThinking}
+          onChange={(v) => update("extendedThinking", v)}
+        />
+        {config.extendedThinking ? (
+          <div className="mt-2">
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="text-[var(--color-fg-muted)]">Thinking budget</span>
+              <span className="font-mono">{formatNumber(config.thinkingBudgetTokens || 4000)} tokens</span>
             </div>
-          ) : null}
-          <div className="mt-2 border-t border-[var(--color-border)] pt-2">
-            <Toggle
-              label="Prompt caching"
-              description="Cachea el contexto estable. Reduce input tokens hasta 90%."
-              checked={config.promptCaching}
-              onChange={(v) => update("promptCaching", v)}
+            <input
+              type="range"
+              min={1000}
+              max={32000}
+              step={1000}
+              value={config.thinkingBudgetTokens || 4000}
+              onChange={(e) => update("thinkingBudgetTokens", Number(e.target.value))}
+              className="claude-range w-full"
             />
           </div>
-        </Section>
-      </div>
-
-      {/* RIGHT — preview + metrics */}
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:h-fit">
-        <div className="grid grid-cols-3 gap-3">
-          <Gauge label="Seguridad" value={metrics.security.score} sublabel={metrics.security.label} tone={securityTone} />
-          <Gauge label="Tokens" value={tokenLoad} sublabel={`${formatNumber(metrics.tokens.tokensPerMonth)}/mes`} tone={tokensTone} />
-          <Gauge
-            label="Eficiencia"
-            value={metrics.efficiency.score}
-            sublabel={metrics.efficiency.label}
-            tone={efficiencyTone}
+        ) : null}
+        <div className="mt-2 border-t border-[var(--color-border)] pt-2">
+          <Toggle
+            label="Prompt caching"
+            description="Caches stable context. Cuts input tokens up to 90%."
+            checked={config.promptCaching}
+            onChange={(v) => update("promptCaching", v)}
           />
         </div>
+      </section>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-          <div className="mb-3 text-xs uppercase tracking-wider text-[var(--color-fg-muted)]">Estimación mensual</div>
-          <div className="flex items-baseline justify-between">
-            <div>
-              <div className="font-mono text-3xl font-medium">{formatUSD(metrics.tokens.costPerMonthUSD)}</div>
-              <div className="mt-1 text-xs text-[var(--color-fg-muted)]">
-                {formatNumber(metrics.tokens.tokensPerMonth)} tokens · {formatNumber(metrics.tokens.tokensPerSession)}/sesión
+      {/* Generate */}
+      <div className="mt-4 flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={handleGenerate}
+          className="w-full rounded-md bg-[var(--color-fg)] px-5 py-3 text-sm font-semibold text-[var(--color-bg)] transition hover:opacity-90 sm:w-auto sm:min-w-[280px]"
+        >
+          Generate configuration →
+        </button>
+        <p className="text-xs text-[var(--color-fg-muted)]">
+          Your settings.json, security score and token estimate will appear below.
+        </p>
+      </div>
+
+      {/* Result */}
+      {generated ? (
+        <div ref={resultRef} className="fadein mt-4 flex flex-col gap-4 border-t border-[var(--color-border)] pt-8">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold tracking-tight">Your configuration</h3>
+            <p className="mt-1 text-xs text-[var(--color-fg-muted)]">
+              Paste into{" "}
+              <code className="font-mono text-[var(--color-fg)]">~/.claude/settings.json</code>
+              {" "}(global) or{" "}
+              <code className="font-mono text-[var(--color-fg)]">.claude/settings.json</code> (project).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <MetricCard
+              label="Security"
+              value={`${metrics.security.score}`}
+              sub={metrics.security.label}
+              tone={securityTone}
+            />
+            <MetricCard
+              label="Monthly cost"
+              value={formatUSD(metrics.tokens.costPerMonthUSD)}
+              sub={`${formatNumber(metrics.tokens.tokensPerMonth)} tokens/mo`}
+              tone={tokensTone}
+            />
+            <MetricCard
+              label="Efficiency"
+              value={`${metrics.efficiency.score}`}
+              sub={metrics.efficiency.label}
+              tone={efficiencyTone}
+            />
+          </div>
+
+          {metrics.tokens.cacheSavingsPercent > 0 ? (
+            <div
+              className="rounded-md border px-3 py-2 text-xs"
+              style={{ borderColor: "color-mix(in srgb, var(--color-success) 30%, transparent)", color: "var(--color-success)" }}
+            >
+              Prompt caching saves ≈ {metrics.tokens.cacheSavingsPercent}% on input costs.
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5">
+              <span className="font-mono text-xs text-[var(--color-fg-muted)]">settings.json</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="rounded-md border border-[var(--color-border-strong)] px-3 py-1 text-xs transition hover:bg-[var(--color-bg-hover)]"
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="rounded-md bg-[var(--color-fg)] px-3 py-1 text-xs font-medium text-[var(--color-bg)] transition hover:opacity-90"
+                >
+                  Download
+                </button>
               </div>
             </div>
-            {metrics.tokens.cacheSavingsPercent > 0 ? (
-              <div className="rounded border border-[var(--color-success)]/30 px-2 py-1 text-xs" style={{ color: "var(--color-success)" }}>
-                -{metrics.tokens.cacheSavingsPercent}% por cache
-              </div>
-            ) : null}
+            <pre className="max-h-[520px] overflow-auto p-4 font-mono text-xs leading-relaxed">
+              <code>{jsonString}</code>
+            </pre>
           </div>
-        </div>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5">
-            <span className="font-mono text-xs text-[var(--color-fg-muted)]">settings.json</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="rounded-md border border-[var(--color-border-strong)] px-3 py-1 text-xs transition hover:bg-[var(--color-bg-hover)]"
-              >
-                {copied ? "Copiado" : "Copiar"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="rounded-md bg-[var(--color-fg)] px-3 py-1 text-xs font-medium text-[var(--color-bg)] transition hover:opacity-90"
-              >
-                Descargar
-              </button>
+          <details className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4 text-xs">
+            <summary className="cursor-pointer font-medium">Why these scores</summary>
+            <div className="mt-3 space-y-3">
+              <Reasons title="Security" items={metrics.security.reasons} />
+              <Reasons title="Efficiency" items={metrics.efficiency.reasons} />
             </div>
-          </div>
-          <pre className="max-h-[420px] overflow-auto p-4 font-mono text-xs leading-relaxed">
-            <code>{jsonString}</code>
-          </pre>
-        </div>
+          </details>
 
-        <details className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-4 text-xs">
-          <summary className="cursor-pointer font-medium">Por qué este puntaje</summary>
-          <div className="mt-3 space-y-3">
-            <Reasons title="Seguridad" items={metrics.security.reasons} />
-            <Reasons title="Eficiencia" items={metrics.efficiency.reasons} />
+          <div className="flex justify-center pt-2">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-md border border-[var(--color-border-strong)] px-4 py-2 text-xs text-[var(--color-fg-muted)] transition hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-fg)]"
+            >
+              Start over
+            </button>
           </div>
-        </details>
-      </aside>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function ChipList({
-  label,
-  tone,
-  items,
-  onRemove,
-  input,
-  setInput,
-  onAdd,
-  placeholder,
-}: {
-  label: string;
-  tone: "success" | "danger";
-  items: string[];
-  onRemove: (v: string) => void;
-  input: string;
-  setInput: (v: string) => void;
-  onAdd: () => void;
-  placeholder: string;
-}) {
-  const color = tone === "success" ? "var(--color-success)" : "var(--color-danger)";
+interface StepRangeBareProps {
+  value: number;
+  max: number;
+  onChange: (v: number) => void;
+  unit: string;
+  summary: string;
+}
+function StepRangeBare({ value, max, onChange, summary }: StepRangeBareProps) {
+  const dec = () => onChange(Math.max(0, value - 1));
+  const inc = () => onChange(Math.min(max, value + 1));
   return (
-    <div>
-      <div className="mb-2 text-xs uppercase tracking-wider" style={{ color }}>
-        {label}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {items.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-xs"
-            style={{ borderColor: color, color }}
-          >
-            {v}
-            <button
-              type="button"
-              onClick={() => onRemove(v)}
-              aria-label={`remove ${v}`}
-              className="text-[var(--color-fg-muted)] hover:text-[var(--color-fg)]"
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-1">
+    <>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={dec}
+          aria-label="decrease"
+          disabled={value <= 0}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong)] text-lg transition hover:bg-[var(--color-bg-hover)] disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          −
+        </button>
         <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              onAdd();
-            }
-          }}
-          placeholder={placeholder}
-          className="flex-1 rounded border border-[var(--color-border-strong)] bg-transparent px-2 py-1 text-xs font-mono outline-none focus:border-[var(--color-fg)]"
+          type="range"
+          min={0}
+          max={max}
+          step={1}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="claude-range flex-1"
         />
         <button
           type="button"
-          onClick={onAdd}
-          className="rounded border border-[var(--color-border-strong)] px-2 py-1 text-xs hover:bg-[var(--color-bg-hover)]"
+          onClick={inc}
+          aria-label="increase"
+          disabled={value >= max}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--color-border-strong)] text-lg transition hover:bg-[var(--color-bg-hover)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           +
         </button>
       </div>
-    </div>
+      <div className="mt-2 text-xs text-[var(--color-fg-muted)]">{summary}</div>
+    </>
   );
 }
 
