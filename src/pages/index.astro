@@ -4,18 +4,5 @@ import Calculator from "@/components/Calculator.tsx";
 ---
 
 <Layout>
-  <section class="border-b border-[var(--color-border)]">
-    <div class="mx-auto max-w-3xl px-4 py-10 lg:px-6 lg:py-14">
-      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Build your Claude config.
-        <span class="text-[var(--color-fg-muted)]">Measure the impact.</span>
-      </h1>
-      <p class="mt-3 max-w-2xl text-sm text-[var(--color-fg-muted)] sm:text-base">
-        Dial in model, permissions, hooks and MCP servers. Claudeculator scores security, token usage and
-        efficiency, then generates a ready-to-use <code class="font-mono text-[var(--color-fg)]">settings.json</code>.
-      </p>
-    </div>
-  </section>
-
   <Calculator client:load />
 </Layout>
