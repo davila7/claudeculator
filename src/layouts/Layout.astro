@@ -1,0 +1,67 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Claudeculator — Calculadora de settings.json para Claude",
+  description = "Arma tu configuración de Claude Code y mide seguridad, tokens y eficiencia en tiempo real.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="min-h-screen">
+      <header class="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
+          <a href="/" class="flex items-center gap-2">
+            <span
+              class="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-fg)] font-mono text-sm font-bold text-[var(--color-bg)]"
+            >
+              C
+            </span>
+            <span class="font-semibold tracking-tight">Claudeculator</span>
+            <span
+              class="hidden rounded border border-[var(--color-border-strong)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[var(--color-fg-muted)] sm:inline-block"
+            >
+              beta
+            </span>
+          </a>
+          <nav class="flex items-center gap-4 text-sm text-[var(--color-fg-muted)]">
+            <a
+              href="https://docs.claude.com/en/docs/claude-code/settings"
+              target="_blank"
+              rel="noreferrer"
+              class="hidden hover:text-[var(--color-fg)] sm:inline"
+            >
+              Docs
+            </a>
+            <a href="https://github.com/danielavila" target="_blank" rel="noreferrer" class="hover:text-[var(--color-fg)]">
+              GitHub →
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main><slot /></main>
+
+      <footer class="border-t border-[var(--color-border)] py-8 text-center text-xs text-[var(--color-fg-muted)]">
+        <div class="mx-auto max-w-7xl px-4 lg:px-8">
+          Hecho con Astro · estimaciones orientativas — ajusta el perfil de uso a tu realidad
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

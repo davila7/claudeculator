@@ -1,0 +1,21 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Calculator from "@/components/Calculator.tsx";
+---
+
+<Layout>
+  <section class="border-b border-[var(--color-border)]">
+    <div class="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
+      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+        Arma tu config de Claude.
+        <span class="text-[var(--color-fg-muted)]">Mide el impacto.</span>
+      </h1>
+      <p class="mt-3 max-w-2xl text-sm text-[var(--color-fg-muted)] sm:text-base">
+        Elige modelo, permisos, hooks y MCP servers. Claudeculator calcula en vivo la seguridad, el consumo
+        de tokens y la eficiencia de tu <code class="font-mono text-[var(--color-fg)]">settings.json</code>.
+      </p>
+    </div>
+  </section>
+
+  <Calculator client:load />
+</Layout>

@@ -1,0 +1,72 @@
+@import "tailwindcss";
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/500.css";
+
+@theme {
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: #000000;
+  --color-bg-elevated: #0a0a0a;
+  --color-bg-hover: #111111;
+  --color-fg: #ededed;
+  --color-fg-muted: #a1a1a1;
+  --color-fg-subtle: #666666;
+  --color-border: #1f1f1f;
+  --color-border-strong: #333333;
+  --color-accent: #ffffff;
+
+  --color-success: #0cce6b;
+  --color-warning: #f5a623;
+  --color-danger: #ff4d4f;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+::selection {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* Subtle scrollbar, Vercel style */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fadein {
+  animation: fadein 0.3s ease-out;
+}
