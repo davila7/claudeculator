@@ -63,8 +63,6 @@ npm install
 npm run dev      # http://localhost:4321
 ```
 
-Optional: copy `.env.example` to `.env` and set `PUBLIC_GA_ID` if you want analytics in your own deployment.
-
 ## License
 
-MIT © [Daniel Avila](https://danielavila.me)
+MIT © [Daniel Avila](https://danielavila.me) X [Daniel San](https://x.com/dani_avila7)
