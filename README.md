@@ -4,12 +4,15 @@
 
 **Live:** [claudeculator.vercel.app](https://claudeculator.vercel.app)
 
+<img width="1210" height="756" alt="Screenshot 2026-04-24 at 22 09 53" src="https://github.com/user-attachments/assets/4285dbd7-3aca-41fd-9db9-a64de022a714" />
+
 ![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-black)
 
 ---
+
 
 ## What it does
 
