@@ -1,6 +1,8 @@
 # Claudeculator
 
-> The `settings.json` calculator for Claude Code. Build your config with range sliders, score **security**, **token usage** and **efficiency**, then export a ready-to-use file.
+> Build a `settings.json` for Claude Code with a slider-based wizard, then see how secure, expensive, and efficient your config actually is — before you ship it.
+
+**Live:** [claudeculator.vercel.app](https://claudeculator.vercel.app)
 
 ![Astro](https://img.shields.io/badge/Astro-5-FF5D01?logo=astro&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
@@ -9,71 +11,57 @@
 
 ---
 
-## What is it?
+## What it does
 
-**Claudeculator** is an Astro SPA that walks you through a short, slider-based wizard to assemble a Claude Code configuration. When you're done, hit **Generate configuration** and it reveals:
+Claudeculator turns your Claude Code configuration into something you can reason about. You move a few sliders — model, usage intensity, permission mode, hooks, MCP servers, thinking & caching — and the page tells you, in real time:
 
-- Your `settings.json`, ready to copy or download
-- A **security** score (0–100)
-- A **monthly token + cost** estimate
-- An **efficiency** score (speed × quality × cost balance)
+- **Security score (0–100)** — how locked-down your config is
+- **Monthly token usage and estimated cost**
+- **Efficiency score (0–100)** — speed × quality × cost balance
+
+When you're happy, click **Generate configuration** and the site reveals a ready-to-use `settings.json` you can copy or download into `~/.claude/settings.json` (global) or `.claude/settings.json` (per-project).
+
+## How the scores work
+
+### Security
+Rewards explicit denylists, restrictive permission modes, and validation hooks. Penalizes broad allowlists, `bypassPermissions`, `--dangerously-skip-permissions`, and excessive MCP surface area.
+
+### Tokens & cost
+Estimates monthly token usage from the chosen model, usage profile, thinking budget, hook overhead, and MCP-server chatter. Factors in a 60% prompt-cache hit rate when caching is enabled.
+
+### Efficiency
+Blends model speed, quality, and cost with the per-turn overhead introduced by hooks and MCP servers.
 
 ## Features
 
-- Step-by-step range sliders for model, usage intensity, permission mode, hooks and MCP servers
+- Step-by-step range sliders for every major Claude Code setting
 - Quick links to curated [aitmpl.com hooks](https://www.aitmpl.com/hooks) and [MCP servers](https://www.aitmpl.com/mcps)
 - Extended thinking and prompt caching toggles
 - Copy or download the generated `settings.json`
-- 100% client-side — no backend, no telemetry, no accounts
-- Vercel-style dark theme (Geist Sans + Geist Mono), fully responsive
+- Vercel-style dark theme, fully responsive
+- 100% static — your config is built entirely in the browser and never leaves your device
+
+## Privacy
+
+Claudeculator is a static site. The `settings.json` you build is computed in your browser and is never sent anywhere. The site loads Google Analytics for aggregate, anonymous traffic stats — any standard ad blocker will block it if you'd rather not be counted.
 
 ## Stack
 
-- [Astro 5](https://astro.build) with islands architecture
-- [React 19](https://react.dev) for the interactive island
-- [Tailwind CSS v4](https://tailwindcss.com)
-- [@fontsource/geist-sans](https://fontsource.org) + `@fontsource/geist-mono`
-- [Zod](https://zod.dev) for schema validation
-- Deployable to [Vercel](https://vercel.com)
+[Astro 5](https://astro.build) · [React 19](https://react.dev) · [Tailwind CSS v4](https://tailwindcss.com) · [Zod](https://zod.dev) · deployed on [Vercel](https://vercel.com).
 
-## How the three scores work
+## Contributing
 
-### Security (0–100)
-Rewards denylists, restrictive permission modes, validation hooks. Penalizes broad allowlists, `bypassPermissions`, `--dangerously-skip-permissions`, and excessive MCP surface.
-
-### Tokens & cost
-Estimates monthly token usage from the selected model, usage profile, thinking budget, hooks overhead, and MCP server chatter. Factors in a 60% prompt-cache hit rate when caching is enabled.
-
-### Efficiency (0–100)
-Blends speed, quality and cost of the chosen model with per-turn overhead from hooks and MCP servers.
-
-## How to use
-
-1. Open the site
-2. Slide through the six steps: model → usage → permission mode → hooks → MCP → thinking & caching
-3. Click **Generate configuration**
-4. Copy or download your `settings.json`
-5. Paste into `~/.claude/settings.json` (global) or `.claude/settings.json` (project)
+Issues and PRs are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the short version. For anything security-related, please follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.
 
 ## Local development
 
 ```bash
 npm install
-npm run dev       # http://localhost:4321
-npm run build
-npm run preview
+npm run dev      # http://localhost:4321
 ```
 
-## Roadmap
-
-- [x] Repo + README
-- [x] Astro + Tailwind + Vercel-style theme scaffolding
-- [x] Range-slider calculator UI
-- [x] Generate step with metrics + copy/download
-- [ ] Custom MCP server input
-- [ ] Share-by-URL (encoded config)
-- [ ] Deploy to Vercel
+Optional: copy `.env.example` to `.env` and set `PUBLIC_GA_ID` if you want analytics in your own deployment.
 
 ## License
 
-MIT © [Daniel Avila](https://danielavila.me) — 2026
+MIT © [Daniel Avila](https://danielavila.me)

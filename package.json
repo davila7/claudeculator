@@ -3,6 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Slider-based wizard that builds a Claude Code settings.json and scores its security, token usage, and efficiency in real time.",
+  "homepage": "https://claudeculator.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davila7/claudeculator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/davila7/claudeculator/issues"
+  },
+  "license": "MIT",
+  "author": "Daniel Avila <dan.avila7@gmail.com> (https://danielavila.me)",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "settings",
+    "calculator",
+    "astro"
+  ],
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
