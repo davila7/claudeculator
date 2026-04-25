@@ -54,6 +54,37 @@ const {
 
       <main><slot /></main>
 
+      <section class="border-t border-[var(--color-border)] py-12">
+        <div class="mx-auto max-w-6xl px-4 lg:px-6">
+          <h2 class="text-center text-lg font-semibold tracking-tight">
+            Want more components?
+          </h2>
+          <p class="mt-2 text-center text-sm text-[var(--color-fg-muted)]">
+            Explore skills, agents, hooks and MCPs at aitmpl.com.
+          </p>
+          <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: "Skills", href: "https://aitmpl.com/skills" },
+              { label: "Agents", href: "https://aitmpl.com/agents" },
+              { label: "Hooks", href: "https://aitmpl.com/hooks" },
+              { label: "MCPs", href: "https://aitmpl.com/mcps" },
+            ].map((card) => (
+              <a
+                href={card.href}
+                target="_blank"
+                rel="noreferrer"
+                class="group rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4 py-5 text-center transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-hover)]"
+              >
+                <div class="text-sm font-semibold text-[var(--color-fg)]">{card.label}</div>
+                <div class="mt-1 font-mono text-xs text-[var(--color-fg-muted)] group-hover:text-[var(--color-fg)]">
+                  aitmpl.com/{card.label.toLowerCase()} →
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer class="border-t border-[var(--color-border)] py-8 text-center text-xs text-[var(--color-fg-muted)]">
         <div class="mx-auto max-w-6xl px-4 lg:px-6">
           Not an official Anthropic website. Open-source project by
