@@ -35,6 +35,20 @@ Estimates monthly token usage from the chosen model, usage profile, thinking bud
 ### Efficiency
 Blends model speed, quality, and cost with the per-turn overhead introduced by hooks and MCP servers.
 
+## What drives Claude Code cost
+
+The calculator's estimate is built from the same factors that drive your real bill:
+
+1. **Model** — Opus, Sonnet, and Haiku each have different per-1M-token rates for input, output, and cache.
+2. **Input tokens** — full conversation history (resent every turn), system prompt, `CLAUDE.md`, memory files, tool results, hook output, and MCP tool definitions.
+3. **Output tokens** — response text, tool calls, and thinking tokens (billed as output).
+4. **Prompt caching** — cache writes cost ~25% more than normal input, cache reads cost ~10% of input. The 5-minute TTL means stale or invalidated prefixes pay full price again.
+5. **Tool calls and subagents** — each tool call adds input (result) plus output (the call itself). Subagents run their own conversations on top. `WebFetch` and `WebSearch` pull in large external context.
+6. **Per-turn multiplier** — history is resent every turn, so cost grows quadratically with session length unless caching absorbs it. Auto-compaction trims tokens but adds one summary turn.
+
+**Effective formula per turn:**
+`(input_tokens × input_rate) + (cached_tokens × cache_read_rate) + (output_tokens × output_rate)`
+
 ## Features
 
 - Step-by-step range sliders for every major Claude Code setting
